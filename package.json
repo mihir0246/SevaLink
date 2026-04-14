@@ -1,0 +1,10 @@
+{
+  "name": "sevalink-workspace",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && node app.js",
+    "dev:frontend": "cd figma/SevaLink && npm run dev",
+    "dev": "npm run dev:frontend",
+    "start": "npm run dev"
+  }
+}

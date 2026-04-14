@@ -1,0 +1,11 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Safety bypass for injected design tools/extensions that may block the UI */
+#preact-border-shadow-host {
+  pointer-events: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  z-index: -9999 !important;
+}
