@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { saveAuth } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * This page is the landing target after Google OAuth.
@@ -11,6 +12,8 @@ export default function GoogleAuthSuccess() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
 
+  const { setUser } = useAuth();
+
   useEffect(() => {
     const token = params.get('token');
     const userRaw = params.get('user');
@@ -20,6 +23,7 @@ export default function GoogleAuthSuccess() {
       try {
         const user = JSON.parse(decodeURIComponent(userRaw));
         saveAuth(token, user);
+        setUser(user);
         navigate(redirect, { replace: true });
       } catch {
         navigate('/login?error=google_failed', { replace: true });
@@ -27,7 +31,7 @@ export default function GoogleAuthSuccess() {
     } else {
       navigate('/login?error=google_failed', { replace: true });
     }
-  }, []);
+  }, [params, navigate, setUser]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">

@@ -6,6 +6,7 @@ const config = {
   jwtExpiry: '7d',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   nodeEnv: process.env.NODE_ENV || 'development',
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
 };
 
 module.exports = config;

@@ -11,14 +11,23 @@ router.get('/', auth, async (req, res) => {
     const { status, volunteerId, recipientId } = req.query;
     let query = {};
     if (status) query.status = status;
-    if (volunteerId) query.volunteerId = volunteerId;
     if (recipientId) query.recipientId = recipientId;
+
+    if (req.user.role !== 'admin') {
+      if (status !== 'CREATED') {
+        const volunteer = await Volunteer.findOne({ userId: req.user.id });
+        if (!volunteer) return res.status(404).json({ msg: 'Volunteer profile not found' });
+        query.volunteerId = volunteer._id;
+      }
+    } else if (volunteerId) {
+      query.volunteerId = volunteerId;
+    }
 
     const actions = await VolunteerAction.find(query)
       .populate('volunteerId', 'firstName lastName email skills rating')
       .populate('recipientId', 'firstName lastName city needType urgency')
       .populate('distributionCentreId', 'name city')
-      .sort({ _createdAt: -1 });
+      .sort({ createdAt: -1 });
 
     res.json(actions);
   } catch (err) {
@@ -63,6 +72,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // PATCH /api/actions/:id/status — update status
+// Admins: full access. Volunteers: can only accept CREATED actions or update their own.
 router.patch('/:id/status', auth, async (req, res) => {
   try {
     const { status } = req.body;
@@ -71,8 +81,29 @@ router.patch('/:id/status', auth, async (req, res) => {
       return res.status(400).json({ msg: 'Invalid status value' });
     }
 
+    const existing = await VolunteerAction.findById(req.params.id);
+    if (!existing) return res.status(404).json({ msg: 'Action not found' });
+
+    let volunteerProfile = null;
+    if (req.user.role !== 'admin') {
+      volunteerProfile = await Volunteer.findOne({ userId: req.user.id });
+      if (!volunteerProfile) return res.status(404).json({ msg: 'Volunteer profile not found' });
+
+      const isAccepting = existing.status === 'CREATED' && status === 'ASSIGNED';
+      const isOwnAction = existing.volunteerId && existing.volunteerId.toString() === volunteerProfile._id.toString();
+
+      if (!isAccepting && !isOwnAction) {
+        return res.status(403).json({ msg: 'Not authorized to update this action' });
+      }
+    }
+
     const update = { status };
-    if (status === 'ASSIGNED') update.assignedAt = new Date();
+    if (status === 'ASSIGNED') {
+      update.assignedAt = new Date();
+      if (req.user.role !== 'admin') {
+        update.volunteerId = volunteerProfile._id;
+      }
+    }
     if (status === 'COMPLETED' || status === 'PENDING_VERIFICATION') update.completedAt = new Date();
 
     const action = await VolunteerAction.findByIdAndUpdate(req.params.id, update, { new: true })
@@ -92,8 +123,13 @@ router.patch('/:id/status', auth, async (req, res) => {
       await Recipient.findByIdAndUpdate(action.recipientId._id, { status: recipientStatusMap[status] });
     }
 
-    // Update volunteer counters only on true completion (or if moved out of assigned)
-    if (status === 'COMPLETED' && action.volunteerId) {
+    if (status === 'ASSIGNED' && action.volunteerId && existing.status !== 'ASSIGNED') {
+      await Volunteer.findByIdAndUpdate(action.volunteerId._id, {
+        $inc: { actionsActive: 1 }
+      });
+    }
+
+    if (status === 'COMPLETED' && action.volunteerId && existing.status !== 'COMPLETED') {
       await Volunteer.findByIdAndUpdate(action.volunteerId._id, {
         $inc: { actionsCompleted: 1, actionsActive: -1 }
       });

@@ -108,7 +108,7 @@ export default function Needs() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total Needs', value: needs.length, icon: Activity, color: 'blue' },
-            { label: 'Unassigned', value: needs.filter(n => !n.assignedTo).length, icon: User, color: 'indigo' },
+            { label: 'Unassigned', value: needs.filter(n => n.status === 'pending').length, icon: User, color: 'indigo' },
             { label: 'Assigned', value: needs.filter(n => n.assignedTo).length, icon: ShieldCheck, color: 'teal' },
             { label: 'Critical', value: needs.filter(n => n.urgency === 'critical').length, icon: AlertTriangle, color: 'red' },
           ].map((s) => (

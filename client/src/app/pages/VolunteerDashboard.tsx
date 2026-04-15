@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Star, Award, Clock, TrendingUp, Calendar } from 'lucide-react';
 import { volunteersAPI, actionsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const StatCard = ({ label, value, icon: Icon }: any) => (
   <motion.div whileHover={{ y: -4 }} className="bg-white rounded-xl p-4 border border-gray-200">
@@ -24,7 +25,7 @@ const getDynamicBadges = (stats: any) => {
   if (completed >= 20) badges.push({ name: 'Local Hero', icon: '🦸', earned: new Date() });
   if (rating >= 4.8) badges.push({ name: 'Top Rated', icon: '⭐', earned: new Date() });
   if (hours >= 10) badges.push({ name: 'Dedicated', icon: '⏱️', earned: new Date() });
-  
+
   // Minimal baseline for new users
   if (badges.length === 0) {
     badges.push({ name: 'Novice', icon: '🌱', earned: stats?.joinedDate || new Date() });
@@ -41,27 +42,30 @@ const AVAILABILITY = [
 ];
 
 export default function VolunteerDashboard() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [myActions, setMyActions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('sevalink_user') || '{}');
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-    // Find volunteer profile from the DB
-    volunteersAPI.getAll()
+    volunteersAPI.getMe()
       .then(res => {
-        const me = res.data.find((v: any) => v.email === user.email) || res.data[0];
-        setProfile(me || user);
+        setProfile(res.data);
       })
-      .catch(() => setProfile(user));
+      .catch(() => {
+        setProfile(user);
+      });
 
-    // Load this volunteer's actions
-    actionsAPI.getAll({ status: 'ASSIGNED' })
+    actionsAPI.getAll({ status: 'ASSIGNED', volunteerId: user._id || user.id })
       .then(res => setMyActions(res.data.slice(0, 5)))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -130,7 +134,7 @@ export default function VolunteerDashboard() {
           <StatCard label="Total Tasks" value={totalTasks} icon={Award} />
           <StatCard label="Hours Contributed" value={hours} icon={Clock} />
           <StatCard label="Active Tasks" value={myActions.length} icon={TrendingUp} />
-          <StatCard label="Available Hours" value={15} icon={Calendar} />
+          <StatCard label="Available Hours" value={profile?.availableHours ?? 10} icon={Calendar} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

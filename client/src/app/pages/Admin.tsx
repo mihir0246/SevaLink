@@ -50,7 +50,7 @@ export default function Admin() {
   );
 
   const filteredResources = liveResources.filter(resource =>
-    resource.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (resource.label || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getStatusBadge = (status: string) => {
@@ -211,7 +211,6 @@ export default function Admin() {
                     <th className="px-6 py-3 text-left text-xs text-gray-600">Status</th>
                     <th className="px-6 py-3 text-left text-xs text-gray-600">Joined</th>
                     <th className="px-6 py-3 text-left text-xs text-gray-600">Tasks</th>
-                    <th className="px-6 py-3 text-left text-xs text-gray-600"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -257,11 +256,6 @@ export default function Admin() {
                       <td className="px-6 py-4">
                         <span className="text-sm font-bold text-gray-900">{user.tasksCompleted || 0}</span>
                       </td>
-                      <td className="px-6 py-4">
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
-                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -275,7 +269,6 @@ export default function Admin() {
                     <th className="px-6 py-3 text-left text-xs text-gray-600">Quantity</th>
                     <th className="px-6 py-3 text-left text-xs text-gray-600">Status</th>
                     <th className="px-6 py-3 text-left text-xs text-gray-600">Last Updated</th>
-                    <th className="px-6 py-3 text-left text-xs text-gray-600"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -302,7 +295,7 @@ export default function Admin() {
                       className="hover:bg-gray-50"
                     >
                       <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-gray-900">{resource.name}</span>
+                        <span className="text-sm font-bold text-gray-900">{resource.label || resource.name || 'N/A'}</span>
                       </td>
                       <td className="px-6 py-4">
                         <span className="px-2 py-1 bg-[#14B8A6]/10 text-[#14B8A6] rounded-md text-[10px] font-black uppercase tracking-widest">
@@ -314,16 +307,11 @@ export default function Admin() {
                           {resource.quantity || 'N/A'} {resource.unit || ''}
                         </span>
                       </td>
-                      <td className="px-6 py-4">{getStockBadge(resource.quantity > 50 ? 'In Stock' : 'Low Stock')}</td>
+                      <td className="px-6 py-4">{getStockBadge(resource.status || (resource.quantity > 50 ? 'In Stock' : 'Low Stock'))}</td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-600">
-                          {new Date(resource.updatedAt).toLocaleDateString()}
+                          {resource.updatedAt ? new Date(resource.updatedAt).toLocaleDateString() : 'N/A'}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button className="text-gray-400 hover:text-gray-600">
-                          <MoreVertical className="w-5 h-5" />
-                        </button>
                       </td>
                     </motion.tr>
                   ))}

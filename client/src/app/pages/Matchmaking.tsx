@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Star, MapPin, Award, Clock, TrendingUp, CheckCircle, Sparkles } from 'lucide-react';
-import { matchmakingAPI, volunteersAPI } from '../services/api';
+import { matchmakingAPI, recipientsAPI, volunteersAPI, actionsAPI } from '../services/api';
 import { toast } from 'sonner';
 
 const VolunteerCard = ({ volunteer, onAssign }: any) => {
@@ -79,9 +80,8 @@ const VolunteerCard = ({ volunteer, onAssign }: any) => {
         whileTap={{ scale: 0.98 }}
         onClick={handleAssign}
         disabled={isAssigning}
-        className={`w-full py-2.5 rounded-xl text-sm transition-all ${
-          isAssigning ? 'bg-green-500 text-white' : 'bg-[#1E3A8A] text-white hover:bg-[#1E3A8A]/90'
-        }`}
+        className={`w-full py-2.5 rounded-xl text-sm transition-all ${isAssigning ? 'bg-green-500 text-white' : 'bg-[#1E3A8A] text-white hover:bg-[#1E3A8A]/90'
+          }`}
       >
         {isAssigning ? (
           <span className="flex items-center justify-center">
@@ -94,31 +94,24 @@ const VolunteerCard = ({ volunteer, onAssign }: any) => {
   );
 };
 
-export default function Matchmaking() {
-  const [selectedTask] = useState('Food Distribution - North District');
+export default function Matchmaking({ recipientId }: { recipientId?: string }) {
+  const [searchParams] = useSearchParams();
+  const [selectedNeed, setSelectedNeed] = useState<any | null>(null);
   const [sortBy, setSortBy] = useState('match');
   const [volunteers, setVolunteers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [aiRunning, setAiRunning] = useState(false);
 
-  // Load all volunteers on mount
-  useEffect(() => {
-    volunteersAPI.getAll().then(res => setVolunteers(res.data)).catch(() => {});
-  }, []);
+  const explicitRecipientId = recipientId || searchParams.get('recipientId') || undefined;
 
-  // Run Gemini AI batch assignment
-  const handleAIAssign = async () => {
+  const handleRunMatchmaking = async (targetRecipientId: string) => {
     setAiRunning(true);
     try {
-      const res = await matchmakingAPI.assign();
-      const { plan, actions, message } = res.data;
-      toast.success(message || 'AI matchmaking complete!', {
-        description: `${plan.numberOfCasesCreated} volunteer actions created`,
-        duration: 5000,
+      const res = await matchmakingAPI.getCandidates(targetRecipientId);
+      setVolunteers(res.data);
+      toast.success('AI matchmaking complete!', {
+        description: `Found ${res.data.length} suitable volunteers`,
       });
-      // Refresh volunteers list to show updated counts
-      const refreshed = await volunteersAPI.getAll();
-      setVolunteers(refreshed.data);
     } catch (err: any) {
       toast.error('Matchmaking failed', {
         description: err.response?.data?.msg || 'Please ensure you are logged in as admin',
@@ -128,11 +121,86 @@ export default function Matchmaking() {
     }
   };
 
-  const handleAssign = (volunteer: any) => {
-    toast.success(`${volunteer.firstName || volunteer.name} has been assigned!`, {
-      description: 'They will be notified immediately.',
-      duration: 3000,
-    });
+  useEffect(() => {
+    const loadPendingNeed = async () => {
+      try {
+        const res = await recipientsAPI.getAll({ status: 'pending' });
+        const pendingNeeds = res.data || [];
+        if (!pendingNeeds.length) {
+          setSelectedNeed(null);
+          setVolunteers([]);
+          return;
+        }
+
+        const targetNeed = explicitRecipientId
+          ? pendingNeeds.find((need: any) => need._id === explicitRecipientId || need.id === explicitRecipientId) || pendingNeeds[0]
+          : pendingNeeds[0];
+
+        setSelectedNeed(targetNeed);
+        const targetId = explicitRecipientId || targetNeed._id || targetNeed.id;
+        if (targetId) {
+          await handleRunMatchmaking(targetId);
+        }
+      } catch (err: any) {
+        toast.error('Unable to load task details', {
+          description: err.response?.data?.msg || 'Please try refreshing the page',
+        });
+      }
+    };
+
+    loadPendingNeed();
+  }, [explicitRecipientId]);
+
+  const handleAssign = async (volunteer: any) => {
+    const targetRecipientId = explicitRecipientId || selectedNeed?._id || selectedNeed?.id;
+    try {
+      if (!targetRecipientId) {
+        throw new Error('No recipient selected for assignment');
+      }
+      await actionsAPI.create({
+        volunteerId: volunteer._id,
+        recipientId: targetRecipientId,
+        title: selectedNeed ? `Assignment for ${selectedNeed.needType}` : 'Volunteer assignment',
+        description: `AI-matched assignment with score ${volunteer.matchScore || volunteer.aiMatchScore}`,
+        status: 'ASSIGNED',
+        urgency: selectedNeed?.urgency || 'medium',
+        category: selectedNeed?.needType || 'Other',
+      });
+      toast.success(`${volunteer.firstName || volunteer.name} has been assigned!`, {
+        description: 'They will be notified immediately.',
+        duration: 3000,
+      });
+      if (targetRecipientId) {
+        await handleRunMatchmaking(targetRecipientId);
+      }
+    } catch (err: any) {
+      toast.error('Assignment failed', {
+        description: err.response?.data?.msg || err.message || 'Please try again',
+      });
+    }
+  };
+
+  // Run Gemini AI batch assignment (global)
+  const handleAIAssign = async () => {
+    setAiRunning(true);
+    try {
+      const res = await matchmakingAPI.assign();
+      const { plan, actions, message } = res.data;
+      toast.success(message || 'AI matchmaking complete!', {
+        description: `${plan.numberOfCasesCreated} volunteer actions created`,
+        duration: 5000,
+      });
+      const targetId = explicitRecipientId || selectedNeed?._id || selectedNeed?.id;
+      if (targetId) {
+        await handleRunMatchmaking(targetId);
+      }
+    } catch (err: any) {
+      toast.error('Matchmaking failed', {
+        description: err.response?.data?.msg || 'Please ensure you are logged in as admin',
+      });
+    } finally {
+      setAiRunning(false);
+    }
   };
 
   const sortedVolunteers = [...volunteers].sort((a, b) => {
@@ -168,15 +236,31 @@ export default function Matchmaking() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#1E3A8A] to-[#14B8A6] rounded-2xl p-6 text-white mb-8"
+          className={`rounded-2xl p-6 text-white mb-8 ${
+            selectedNeed ? 'bg-gradient-to-r from-[#1E3A8A] to-[#14B8A6]' : 'bg-amber-500'
+          }`}
         >
-          <h2 className="text-xl mb-2">Selected Task</h2>
-          <p className="text-lg mb-4">{selectedTask}</p>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center"><MapPin className="w-4 h-4 mr-2" />North District</div>
-            <div className="flex items-center"><Clock className="w-4 h-4 mr-2" />Due: Apr 12, 2026</div>
-            <div className="px-3 py-1 bg-white/20 rounded-full">High Priority</div>
-          </div>
+          <h2 className="text-xl mb-2">{selectedNeed ? 'Target Requirement' : 'Manual Mode'}</h2>
+          <p className="text-lg mb-4">
+            {selectedNeed 
+              ? `${selectedNeed.firstName} ${selectedNeed.lastName} — ${selectedNeed.needType}` 
+              : 'Generic Assignment (Select a task from Community Needs first for better accuracy)'}
+          </p>
+          {selectedNeed && (
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center"><MapPin className="w-4 h-4 mr-2" />{selectedNeed.city || 'Anywhere'}</div>
+              <div className="flex items-center"><Clock className="w-4 h-4 mr-2" />Priority: {selectedNeed.urgency}</div>
+              <div className="px-3 py-1 bg-white/20 rounded-full font-bold uppercase text-[10px]">
+                {selectedNeed.householdId || 'DIRECT AID'}
+              </div>
+            </div>
+          )}
+          {!selectedNeed && (
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <AlertCircle className="w-5 h-5" />
+              Please navigate from "Community Needs" pages to assign a specific person.
+            </div>
+          )}
         </motion.div>
 
         {/* Controls */}

@@ -37,6 +37,7 @@ export const authAPI = {
 // ── Volunteers ────────────────────────────────────────────────────────────────
 export const volunteersAPI = {
   getAll: (params?: any) => api.get('/volunteers', { params }),
+  getMe: () => api.get('/volunteers/me'),
   getOne: (id: string) => api.get(`/volunteers/${id}`),
   getStats: () => api.get('/volunteers/stats/summary'),
   create: (data: any) => api.post('/volunteers', data),

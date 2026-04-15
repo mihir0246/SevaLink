@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp, AlertCircle, Users, CheckCircle } from 'lucide-react';
-import { actionsAPI, recipientsAPI } from '../services/api';
-import { trendsData } from '../data/mockData'; // keep trends as-is (no time-series endpoint)
+import { actionsAPI, recipientsAPI, reportsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: '#F97316', Medical: '#14B8A6', Shelter: '#1E3A8A', Education: '#8B5CF6', Other: '#6B7280'
@@ -51,17 +51,21 @@ const ActivityItem = ({ activity }: any) => {
 };
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState({ totalActions: 0, created: 0, assigned: 0, completed: 0, urgent: 0, activeVolunteers: 0, needsByCategory: [] as any[] });
   const [recipientStats, setRecipientStats] = useState({ total: 0, pending: 0 });
   const [recentActions, setRecentActions] = useState<any[]>([]);
   const [needsByArea, setNeedsByArea] = useState<any[]>([]);
+  const [liveTrends, setLiveTrends] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    setIsAdmin(user?.role === 'admin');
+
     actionsAPI.getStats().then(res => setStats(res.data)).catch(() => {});
     recipientsAPI.getStats().then(res => setRecipientStats(res.data)).catch(() => {});
     actionsAPI.getAll().then(res => {
       setRecentActions(res.data.slice(0, 5));
-      // Build needs by area from recipients city
     }).catch(() => {});
     recipientsAPI.getAll().then(res => {
       const areaCounts: Record<string, number> = {};
@@ -71,7 +75,11 @@ export default function Dashboard() {
       });
       setNeedsByArea(Object.entries(areaCounts).map(([area, count]) => ({ area, count })));
     }).catch(() => {});
-  }, []);
+
+    if (user?.role === 'admin') {
+      reportsAPI.getSummary().then(res => setLiveTrends(res.data.trends || [])).catch(() => {});
+    }
+  }, [user]);
 
   const categoryData = stats.needsByCategory.length
     ? stats.needsByCategory.map((c: any) => ({ ...c, fill: CATEGORY_COLORS[c.name] || '#6B7280' }))
@@ -124,21 +132,25 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Trends — uses mock historical data */}
+        {/* Trends — live from DB via Reports API */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="bg-white rounded-2xl p-6 border border-gray-200 mb-8">
           <h3 className="text-lg text-gray-900 mb-6">Trends Over Time</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trendsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px' }} />
-              <Legend />
-              <Line type="monotone" dataKey="needs" stroke="#F97316" strokeWidth={3} dot={{ fill: '#F97316', r: 4 }} />
-              <Line type="monotone" dataKey="fulfilled" stroke="#14B8A6" strokeWidth={3} dot={{ fill: '#14B8A6', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
+          {isAdmin ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={liveTrends.length ? liveTrends : [{ month: 'No data', needs: 0, fulfilled: 0 }]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px' }} />
+                <Legend />
+                <Line type="monotone" dataKey="needs" stroke="#F97316" strokeWidth={3} dot={{ fill: '#F97316', r: 4 }} />
+                <Line type="monotone" dataKey="fulfilled" stroke="#14B8A6" strokeWidth={3} dot={{ fill: '#14B8A6', r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-gray-500">Trends are available only for admin users.</p>
+          )}
         </motion.div>
 
         {/* Recent Activity */}

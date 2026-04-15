@@ -3,18 +3,25 @@ import { motion } from 'motion/react';
 import { MapPin, Clock, CheckCircle, Shield, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { actionsAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function MyTasks() {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch all actions for this volunteer (status filter handled by component filtering)
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     actionsAPI.getAll()
       .then(res => setTasks(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

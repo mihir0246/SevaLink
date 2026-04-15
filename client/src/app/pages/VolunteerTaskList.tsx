@@ -3,8 +3,10 @@ import { motion } from 'motion/react';
 import { MapPin, Clock, Award, CheckCircle, Star, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { actionsAPI, volunteersAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function VolunteerTaskList() {
+  const { user } = useAuth();
   const [availableTasks, setAvailableTasks] = useState<any[]>([]);
   const [volunteerStats, setVolunteerStats] = useState({ rating: 0, actionsCompleted: 0, active: true });
   const [acceptedTasks, setAcceptedTasks] = useState<string[]>([]);
@@ -19,10 +21,11 @@ export default function VolunteerTaskList() {
       .finally(() => setLoading(false));
 
     // Load volunteer's own stats
-    volunteersAPI.getAll()
+    if (!user) return;
+
+    volunteersAPI.getMe()
       .then(res => {
-        const user = JSON.parse(localStorage.getItem('sevalink_user') || '{}');
-        const me = res.data.find((v: any) => v.email === user.email);
+        const me = res.data;
         if (me) setVolunteerStats({ 
           rating: me.rating, 
           actionsCompleted: me.actionsCompleted,
@@ -30,7 +33,7 @@ export default function VolunteerTaskList() {
         });
       })
       .catch(() => {});
-  }, []);
+  }, [user]);
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -134,7 +137,7 @@ export default function VolunteerTaskList() {
         ) : !volunteerStats.active ? (
           <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-red-100">
             <ShieldCheck className="w-16 h-16 mx-auto mb-4 text-red-200" />
-            <h2 className="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight text-red-400">Restricted Access</h2>
+            <h2 className="text-xl font-black mb-2 uppercase tracking-tight text-red-400">Restricted Access</h2>
             <p className="text-gray-400 font-medium max-w-sm mx-auto uppercase tracking-widest text-[10px]">Your account has been marked as inactive by the administration. Please contact your coordinator for details.</p>
           </div>
         ) : filteredTasks.length === 0 ? (

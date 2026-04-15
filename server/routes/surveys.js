@@ -45,6 +45,8 @@ router.post('/confirm', [auth, roleCheck('admin')], async (req, res) => {
   try {
     const { 
       name, 
+      firstName: explicitFirstName,
+      lastName: explicitLastName,
       householdId, 
       city, 
       area, 
@@ -67,8 +69,13 @@ router.post('/confirm', [auth, roleCheck('admin')], async (req, res) => {
       }
     }
 
-    const [firstName, ...lastNameParts] = name.split(' ');
-    const lastName = lastNameParts.join(' ') || '';
+    let firstName = explicitFirstName || '';
+    let lastName = explicitLastName || '';
+    if (!firstName && name) {
+      const parts = name.trim().split(/\s+/);
+      firstName = parts.shift() || '';
+      lastName = parts.join(' ');
+    }
 
     const newRecipient = new Recipient({
       firstName,

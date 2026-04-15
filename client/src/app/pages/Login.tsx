@@ -3,9 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { authAPI, saveAuth } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setUser } = useAuth();
   const [role, setRole] = useState<'admin' | 'volunteer'>('admin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,6 +21,7 @@ export default function Login() {
     try {
       const res = await authAPI.login(email, password);
       saveAuth(res.data.token, res.data.user);
+      setUser(res.data.user);
       const userRole = res.data.user.role;
       navigate(userRole === 'admin' ? '/admin/dashboard' : '/volunteer/dashboard');
     } catch (err: any) {

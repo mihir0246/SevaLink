@@ -9,6 +9,6 @@ const ProductSchema = new mongoose.Schema({
   quantity:              { type: Number, default: 0 },
   unit:                  { type: String },
   status:                { type: String, enum: ['In Stock', 'Low Stock', 'Critical'], default: 'In Stock' },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Product', ProductSchema);

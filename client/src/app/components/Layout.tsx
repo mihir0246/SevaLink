@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Map, CheckSquare, Users, UserCircle, Settings, Menu, X, MessageCircle, FileText, Activity, Upload, Globe, Zap, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../context/LanguageContext';
-import { logout as apiLogout } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,15 +34,16 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const handleLogout = () => {
-    apiLogout();
+    logout();
     navigate('/login');
   };
 
   const navigation = userRole === 'admin' ? adminNavigation : volunteerNavigation;
-  const userName = userRole === 'admin' ? 'Admin User' : 'Sarah Johnson';
+  const { user, logout } = useAuth();
+  const userName = user ? `${user.firstName || ''}${user.lastName ? ' ' + user.lastName : ''}`.trim() : (userRole === 'admin' ? 'Admin' : 'Volunteer');
   const userRoleText = userRole === 'admin' ? 'NGO Admin' : 'Volunteer';
 
   const languages = [

@@ -5,7 +5,7 @@ const VolunteerAction = require('../models/VolunteerAction');
 const Volunteer = require('../models/Volunteer');
 const auth = require('../middleware/auth');
 const roleCheck = require('../middleware/roleCheck');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config/config');
 
 /**
@@ -15,7 +15,7 @@ const config = require('../config/config');
  */
 router.get('/summary', [auth, roleCheck('admin')], async (req, res) => {
   const { timeRange } = req.query; // '1day', '2days', 'week', 'month', 'year', 'all'
-  
+
   let matchQuery = {};
   if (timeRange && timeRange !== 'all') {
     const startDate = new Date();
@@ -59,7 +59,7 @@ router.get('/summary', [auth, roleCheck('admin')], async (req, res) => {
     // 5. Volunteer Stats
     const totalVolunteers = await Volunteer.countDocuments();
     const activeVolunteers = await Volunteer.countDocuments({ active: true });
-    
+
     // 6. Real Trends (Last 6 Weeks)
     const sixWeeksAgo = new Date();
     sixWeeksAgo.setDate(sixWeeksAgo.getDate() - (6 * 7));
@@ -73,8 +73,8 @@ router.get('/summary', [auth, roleCheck('admin')], async (req, res) => {
             year: { $year: "$createdAt" }
           },
           needs: { $sum: 1 },
-          fulfilled: { 
-            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } 
+          fulfilled: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] }
           }
         }
       },
@@ -82,17 +82,30 @@ router.get('/summary', [auth, roleCheck('admin')], async (req, res) => {
       { $limit: 6 }
     ]);
 
-    const trends = realTrendsRaw.map((t, i) => ({
-      month: `Week ${t._id.week}`,
-      needs: t.needs,
-      fulfilled: t.fulfilled
-    }));
+    const trends = [];
+    const now = new Date();
 
-    // If no data yet, provide a small baseline instead of empty array
-    if (trends.length === 0) {
-      for (let i = 5; i >= 0; i--) {
-        trends.push({ month: `W-${i}`, needs: 0, fulfilled: 0 });
-      }
+    // Create base 6 weeks (this week and last 5)
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (i * 7));
+      const weekNum = getWeekNumber(d);
+
+      const realData = realTrendsRaw.find(t => t._id.week === weekNum);
+      trends.push({
+        month: `Week ${weekNum}`,
+        needs: realData ? realData.needs : 0,
+        fulfilled: realData ? realData.fulfilled : 0
+      });
+    }
+
+    // Helper to get week number
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return weekNo;
     }
 
     res.json({
@@ -127,11 +140,10 @@ router.get('/ai-summary', [auth, roleCheck('admin')], async (req, res) => {
     const resolvedNeeds = (await Recipient.countDocuments({ status: 'completed' })) || 0;
     const citiesRaw = await Recipient.distinct('city');
     const cities = citiesRaw.filter(c => c).join(', ') || 'Various Regions';
-    
+
     console.log(`Generating AI Summary with: ${totalNeeds} needs, ${urgentNeeds} urgent, ${resolvedNeeds} resolved`);
 
-    const genAI = new GoogleGenAI(config.geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const genAI = new GoogleGenerativeAI(config.geminiApiKey);
 
     const prompt = `
       You are an Impact Analyst for SevaLink, a social aid platform. 
@@ -147,6 +159,7 @@ router.get('/ai-summary', [auth, roleCheck('admin')], async (req, res) => {
       and celebrating the efficiency of resolved needs. Keep it professional, empathetic, and data-driven.
     `;
 
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const result = await model.generateContent(prompt);
     const summary = result.response.text();
 
@@ -155,9 +168,9 @@ router.get('/ai-summary', [auth, roleCheck('admin')], async (req, res) => {
     res.json({ summary });
   } catch (err) {
     console.error('AI Summary Route Error:', err);
-    res.status(500).json({ 
-      msg: 'Error generating AI summary', 
-      details: err.message 
+    res.status(500).json({
+      msg: 'Error generating AI summary',
+      details: err.message
     });
   }
 });

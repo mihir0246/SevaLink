@@ -1,7 +1,7 @@
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config/config');
 
-const genAI = new GoogleGenAI(config.geminiApiKey);
+const genAI = new GoogleGenerativeAI(config.geminiApiKey);
 
 /**
  * Uses Gemini Pro Vision (or 1.5 Flash) to extract structured survey data 

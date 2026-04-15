@@ -77,7 +77,7 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 // Step 2: Google redirects back here
 router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_failed` }),
+  passport.authenticate('google', { session: false, failureRedirect: `${config.frontendUrl}/login?error=google_failed` }),
   (req, res) => {
     const user = req.user;
     const payload = { id: user._id, email: user.email, role: user.role, firstName: user.firstName };
@@ -87,7 +87,7 @@ router.get('/google/callback',
     }));
     // Redirect to frontend with token in URL — frontend reads it and saves to localStorage
     const dest = user.role === 'admin' ? '/admin/dashboard' : '/volunteer/dashboard';
-    res.redirect(`${process.env.FRONTEND_URL}/auth/google/success?token=${token}&user=${userData}&redirect=${dest}`);
+    res.redirect(`${config.frontendUrl}/auth/google/success?token=${token}&user=${userData}&redirect=${dest}`);
   }
 );
 

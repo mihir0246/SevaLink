@@ -1,7 +1,7 @@
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config/config');
 
-const ai = new GoogleGenAI({ apiKey: config.geminiApiKey });
+const genAI = new GoogleGenerativeAI(config.geminiApiKey);
 
 /**
  * Mirrors OVP's assignVolunteers mutation but enhanced with Gemini AI.
@@ -26,24 +26,24 @@ Your task is to optimally assign volunteers to community needs (recipients).
 
 RECIPIENTS (people needing help):
 ${JSON.stringify(recipients.map(r => ({
-  id: r._id,
-  name: `${r.firstName} ${r.lastName}`,
-  city: r.city,
-  needType: r.needType,
-  urgency: r.urgency,
-  preferredProducts: r.preferredProducts
-})), null, 2)}
+      id: r._id,
+      name: `${r.firstName} ${r.lastName}`,
+      city: r.city,
+      needType: r.needType,
+      urgency: r.urgency,
+      preferredProducts: r.preferredProducts
+    })), null, 2)}
 
 AVAILABLE VOLUNTEERS:
 ${JSON.stringify(volunteers.map(v => ({
-  id: v._id,
-  name: `${v.firstName} ${v.lastName}`,
-  skills: v.skills,
-  city: v.city,
-  canDeliver: v.canDeliver,
-  rating: v.rating,
-  actionsCompleted: v.actionsCompleted
-})), null, 2)}
+      id: v._id,
+      name: `${v.firstName} ${v.lastName}`,
+      skills: v.skills,
+      city: v.city,
+      canDeliver: v.canDeliver,
+      rating: v.rating,
+      actionsCompleted: v.actionsCompleted
+    })), null, 2)}
 
 For each recipient, select the single best matching volunteer based on:
 1. Skill relevance to the need type (e.g., Medical skills for Medical needs)
@@ -60,7 +60,7 @@ Return ONLY a valid JSON array (no markdown). Each object must have:
 Do not assign the same volunteer to more than one recipient if possible.
 `;
 
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let text = response.text().trim();

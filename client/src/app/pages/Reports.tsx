@@ -276,7 +276,7 @@ export default function Reports() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
           >
-            <h3 className="text-lg font-bold text-gray-900 mb-6 font-bold">Priority Distribution</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Priority Distribution</h3>
             <div className="h-[300px]">
               {data?.needsByUrgency ? (
                 <ResponsiveContainer width="100%" height="100%">

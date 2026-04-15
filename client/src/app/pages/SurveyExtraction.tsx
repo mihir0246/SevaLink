@@ -104,7 +104,16 @@ export default function SurveyExtraction() {
   const handleSave = async () => {
     try {
       setIsProcessing(true);
-      await surveysAPI.confirm(extractedData);
+      const fullName = extractedData.name?.trim() || '';
+      const [firstName, ...lastNameParts] = fullName.split(/\s+/).filter(Boolean);
+      const lastName = lastNameParts.join(' ');
+
+      await surveysAPI.confirm({
+        ...extractedData,
+        firstName: firstName || '',
+        lastName,
+      });
+
       toast.success('Survey data saved successfully!', {
         description: 'The need has been added to the system.'
       });

@@ -4,6 +4,31 @@ const Recipient = require('../models/Recipient');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/roleCheck');
 
+// Helper to geocode addresses via OpenStreetMap Nominatim
+async function geocodeAddress(city, address1) {
+  if (!city) return null;
+  const searchStr = `${address1 ? address1 + ', ' : ''}${city}`;
+  try {
+    const urlFull = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(searchStr)}`;
+    let response = await fetch(urlFull, { headers: { 'User-Agent': 'SevaLink_Geocoding/1.0' } });
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.length > 0) return { lat: parseFloat(data[0].lat), long: parseFloat(data[0].lon) };
+    }
+
+    // Fallback: Try just the city if the exact address fails
+    const urlCity = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(city)}`;
+    response = await fetch(urlCity, { headers: { 'User-Agent': 'SevaLink_Geocoding/1.0' } });
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.length > 0) return { lat: parseFloat(data[0].lat), long: parseFloat(data[0].lon) };
+    }
+  } catch (err) {
+    console.error('Backend Geocoding Error:', err.message);
+  }
+  return null;
+}
+
 // GET /api/recipients — list all (with filters)
 router.get('/', auth, async (req, res) => {
   try {
@@ -46,7 +71,12 @@ router.get('/stats', auth, async (req, res) => {
 // POST /api/recipients — admin adds a community need
 router.post('/', auth, requireRole('admin'), async (req, res) => {
   try {
-    const recipient = new Recipient(req.body);
+    const coords = await geocodeAddress(req.body.city, req.body.address1);
+    const recipient = new Recipient({
+      ...req.body,
+      lat: coords ? coords.lat : req.body.lat,
+      long: coords ? coords.long : req.body.long
+    });
     await recipient.save();
     res.status(201).json(recipient);
   } catch (err) {
@@ -57,7 +87,21 @@ router.post('/', auth, requireRole('admin'), async (req, res) => {
 // PATCH /api/recipients/:id — update need
 router.patch('/:id', auth, requireRole('admin'), async (req, res) => {
   try {
-    const recipient = await Recipient.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    const updateData = { ...req.body };
+    if (updateData.city || updateData.address1) {
+      const recipientToUpdate = await Recipient.findById(req.params.id);
+      if (recipientToUpdate) {
+        const coords = await geocodeAddress(
+          updateData.city || recipientToUpdate.city,
+          updateData.address1 || recipientToUpdate.address1
+        );
+        if (coords) {
+          updateData.lat = coords.lat;
+          updateData.long = coords.long;
+        }
+      }
+    }
+    const recipient = await Recipient.findByIdAndUpdate(req.params.id, updateData, { new: true })
       .populate('assignedTo', 'firstName lastName');
     if (!recipient) return res.status(404).json({ msg: 'Recipient not found' });
     res.json(recipient);

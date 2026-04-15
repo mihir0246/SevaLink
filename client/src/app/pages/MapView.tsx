@@ -56,14 +56,52 @@ export default function MapView() {
     recipientsAPI.getAll()
       .then(res => {
         // Map backend Recipient model to UI expected format if necessary
-        const mapped = res.data.map((r: any) => ({
-          ...r,
-          id: r._id,
-          title: `${r.firstName} ${r.lastName}`,
-          location: `${r.city}, ${r.address1}`,
-          type: r.needType,
-          volunteers: r.assignedAction ? 1 : 0
-        })).filter((r: any) => r.lat && r.long); // Only show items with coordinates
+        const mapped = res.data.map((r: any) => {
+          // Local Mumbai Geocoding Fallback
+          let lat = r.lat;
+          let lng = r.long;
+
+          if (!lat || !lng) {
+            const searchText = `${r.city || ''} ${r.address1 || ''}`.toLowerCase();
+            const MUMBAI_LOCS: Record<string, [number, number]> = {
+              'kurla': [19.0726, 72.8845],
+              'andheri': [19.1136, 72.8697],
+              'bandra': [19.0596, 72.8295],
+              'borivali': [19.2307, 72.8567],
+              'colaba': [18.9067, 72.8147],
+              'dadar': [19.0178, 72.8478],
+              'juhu': [19.1075, 72.8263],
+              'powai': [19.1176, 72.9060],
+              'thane': [19.2183, 72.9781],
+              'navi mumbai': [19.0330, 73.0297],
+              'mumbai': [19.0760, 72.8777]
+            };
+
+            let foundMatch = null;
+            for (const key of Object.keys(MUMBAI_LOCS)) {
+              if (searchText.includes(key)) {
+                foundMatch = MUMBAI_LOCS[key];
+                break;
+              }
+            }
+            
+            // Jitter so markers at the same region don't perfectly overlap
+            const center = foundMatch || [19.0760, 72.8777]; // Default to general Mumbai
+            lat = center[0] + (Math.random() - 0.5) * 0.02;
+            lng = center[1] + (Math.random() - 0.5) * 0.02;
+          }
+          
+          return {
+            ...r,
+            id: r._id,
+            title: `${r.firstName} ${r.lastName}`,
+            location: `${r.city || 'Unknown City'}, ${r.address1 || ''}`.replace(/,\s*$/, ''),
+            type: r.needType,
+            lat,
+            lng,
+            volunteers: r.assignedAction ? 1 : 0
+          };
+        });
         
         setNeeds(mapped);
       })
@@ -78,7 +116,7 @@ export default function MapView() {
     mapRef.current = L.map(containerRef.current, {
       zoomControl: false,
       attributionControl: false
-    }).setView([40.7589, -73.9851], 13);
+    }).setView([19.0760, 72.8777], 11); // Centered on Mumbai
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'

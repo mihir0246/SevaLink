@@ -17,7 +17,6 @@ const VolunteerActionSchema = new mongoose.Schema({
   // Gemini AI matchmaking result
   aiMatchScore:         { type: Number },
   aiMatchReason:        { type: String },
-  _createdAt:           { type: Date, default: Date.now },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('VolunteerAction', VolunteerActionSchema);

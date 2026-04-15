@@ -8,6 +8,22 @@ const Recipient = require('../models/Recipient');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/roleCheck');
 
+// GET /api/volunteers/stats/summary — MUST be before /:id or Express treats 'stats' as an ID
+router.get('/stats/summary', auth, async (req, res) => {
+  try {
+    const total = await Volunteer.countDocuments({ active: true });
+    const activeTasks = await VolunteerAction.countDocuments({ status: { $in: ['CREATED', 'ASSIGNED'] } });
+    const totalCompleted = await VolunteerAction.countDocuments({ status: 'COMPLETED' });
+    const volunteers = await Volunteer.find({ active: true }).select('rating');
+    const avgRating = volunteers.length
+      ? (volunteers.reduce((sum, v) => sum + v.rating, 0) / volunteers.length).toFixed(1)
+      : 0;
+    res.json({ total, activeTasks, totalCompleted, avgRating });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 // GET /api/volunteers — list all volunteers
 router.get('/', auth, async (req, res) => {
   try {
@@ -15,23 +31,6 @@ router.get('/', auth, async (req, res) => {
     const filter = (all === 'true' && req.user.role === 'admin') ? {} : { active: true };
     const volunteers = await Volunteer.find(filter).sort({ joinedDate: -1 });
     res.json(volunteers);
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-});
-
-// GET /api/volunteers/:id — get a single volunteer with their active tasks
-router.get('/:id', auth, async (req, res) => {
-  try {
-    const volunteer = await Volunteer.findById(req.params.id);
-    if (!volunteer) return res.status(404).json({ msg: 'Volunteer not found' });
-
-    const currentTasks = await VolunteerAction.find({
-      volunteerId: volunteer._id,
-      status: { $in: ['CREATED', 'ASSIGNED'] }
-    }).populate('recipientId', 'firstName lastName city');
-
-    res.json({ ...volunteer.toObject(), currentTasks });
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
@@ -48,34 +47,18 @@ router.post('/', auth, requireRole('admin'), async (req, res) => {
   }
 });
 
-// PATCH /api/volunteers/:id — update volunteer
-router.patch('/:id', auth, async (req, res) => {
+// GET /api/volunteers/me — current volunteer profile for authenticated user
+router.get('/me', auth, async (req, res) => {
   try {
-    const volunteer = await Volunteer.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!volunteer) return res.status(404).json({ msg: 'Volunteer not found' });
+    const volunteer = await Volunteer.findOne({ userId: req.user.id });
+    if (!volunteer) return res.status(404).json({ msg: 'Volunteer profile not found' });
     res.json(volunteer);
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
 });
 
-// GET /api/volunteers/stats/summary
-router.get('/stats/summary', auth, async (req, res) => {
-  try {
-    const total = await Volunteer.countDocuments({ active: true });
-    const activeTasks = await VolunteerAction.countDocuments({ status: { $in: ['CREATED', 'ASSIGNED'] } });
-    const totalCompleted = await VolunteerAction.countDocuments({ status: 'COMPLETED' });
-    const volunteers = await Volunteer.find({ active: true }).select('rating');
-    const avgRating = volunteers.length
-      ? (volunteers.reduce((sum, v) => sum + v.rating, 0) / volunteers.length).toFixed(1)
-      : 0;
-    res.json({ total, activeTasks, totalCompleted, avgRating });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-});
-
-// PATCH /api/volunteers/:id/toggle-active — activate/deactivate
+// PATCH /api/volunteers/:id/toggle-active — MUST also be before generic PATCH /:id
 router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) => {
   console.log(`[Volunteer] Toggling status for ${req.params.id}`);
   try {
@@ -96,7 +79,7 @@ router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) 
 
       if (actionsToReassign.length > 0) {
         const recipientIds = actionsToReassign.map(a => a.recipientId);
-        
+
         // 1. Reset actions and recipients
         await VolunteerAction.updateMany(
           { _id: { $in: actionsToReassign.map(a => a._id) } },
@@ -111,7 +94,7 @@ router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) 
         const pendingRecipients = await Recipient.find({ _id: { $in: recipientIds } });
         const busyActions = await VolunteerAction.find({ status: { $in: ['CREATED', 'ASSIGNED'] } });
         const busyVolunteerIds = busyActions.map(a => a.volunteerId?.toString()).filter(Boolean);
-        
+
         const availableVolunteers = await Volunteer.find({
           active: true,
           _id: { $nin: [volunteer._id, ...busyVolunteerIds] }
@@ -119,7 +102,7 @@ router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) 
 
         if (availableVolunteers.length > 0) {
           const matches = await matchVolunteersToRecipients(pendingRecipients, availableVolunteers);
-          
+
           for (const match of matches) {
             const recipient = pendingRecipients.find(r => r._id.toString() === match.recipientId);
             const newVol = availableVolunteers.find(v => v._id.toString() === match.volunteerId);
@@ -127,7 +110,7 @@ router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) 
 
             const existingAction = actionsToReassign.find(a => a.recipientId.toString() === match.recipientId);
             if (!existingAction) continue;
-            
+
             await VolunteerAction.findByIdAndUpdate(existingAction._id, {
               status: 'ASSIGNED',
               volunteerId: newVol._id,
@@ -152,10 +135,10 @@ router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) 
       }
     }
 
-    res.json({ 
-      msg: `Volunteer ${volunteer.active ? 'activated' : 'deactivated'}`, 
+    res.json({
+      msg: `Volunteer ${volunteer.active ? 'activated' : 'deactivated'}`,
       volunteer,
-      reassignmentSummary 
+      reassignmentSummary
     });
   } catch (err) {
     console.error(err);
@@ -163,5 +146,32 @@ router.patch('/:id/toggle-active', auth, requireRole('admin'), async (req, res) 
   }
 });
 
-module.exports = router;
+// GET /api/volunteers/:id — get a single volunteer with their active tasks
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const volunteer = await Volunteer.findById(req.params.id);
+    if (!volunteer) return res.status(404).json({ msg: 'Volunteer not found' });
 
+    const currentTasks = await VolunteerAction.find({
+      volunteerId: volunteer._id,
+      status: { $in: ['CREATED', 'ASSIGNED'] }
+    }).populate('recipientId', 'firstName lastName city');
+
+    res.json({ ...volunteer.toObject(), currentTasks });
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// PATCH /api/volunteers/:id — update volunteer (admin only)
+router.patch('/:id', auth, requireRole('admin'), async (req, res) => {
+  try {
+    const volunteer = await Volunteer.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!volunteer) return res.status(404).json({ msg: 'Volunteer not found' });
+    res.json(volunteer);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+module.exports = router;
