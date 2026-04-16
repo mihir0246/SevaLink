@@ -7,31 +7,35 @@ import {
 } from 'lucide-react';
 import { recipientsAPI, matchmakingAPI, volunteersAPI } from '../services/api';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
-const URGENCY_CONFIG: Record<string, { label: string; color: string; bg: string; ring: string; icon: any; pulse: boolean }> = {
-  critical: { label: 'CRITICAL', color: 'text-red-600',   bg: 'bg-red-50',     ring: 'ring-red-200',   icon: Flame,   pulse: true },
-  high:     { label: 'HIGH',     color: 'text-orange-600', bg: 'bg-orange-50',  ring: 'ring-orange-200', icon: AlertTriangle, pulse: false },
-  medium:   { label: 'MEDIUM',   color: 'text-yellow-600', bg: 'bg-yellow-50',  ring: 'ring-yellow-200', icon: Activity, pulse: false },
-  low:      { label: 'LOW',      color: 'text-teal-600',   bg: 'bg-teal-50',    ring: 'ring-teal-200',   icon: Shield,  pulse: false },
-};
-
-const NEED_ICON: Record<string, any> = {
-  Food: Package, Medical: Heart, Shelter: Shield, Education: Brain, Other: Activity
+const URGENCY_CONFIG_STYLES: Record<string, { color: string; bg: string; ring: string; icon: any; pulse: boolean }> = {
+  critical: { color: 'text-red-600',   bg: 'bg-red-50',     ring: 'ring-red-200',   icon: Flame,   pulse: true },
+  high:     { color: 'text-orange-600', bg: 'bg-orange-50',  ring: 'ring-orange-200', icon: AlertTriangle, pulse: false },
+  medium:   { color: 'text-yellow-600', bg: 'bg-yellow-50',  ring: 'ring-yellow-200', icon: Activity, pulse: false },
+  low:      { color: 'text-teal-600',   bg: 'bg-teal-50',    ring: 'ring-teal-200',   icon: Shield,  pulse: false },
 };
 
 function UrgencyBadge({ urgency }: { urgency: string }) {
-  const cfg = URGENCY_CONFIG[urgency?.toLowerCase()] ?? URGENCY_CONFIG.low;
+  const { t } = useLanguage();
+  const cfg = URGENCY_CONFIG_STYLES[urgency?.toLowerCase()] ?? URGENCY_CONFIG_STYLES.low;
+  const label = t(`needs.urgency.${urgency?.toLowerCase() ?? 'low'}`);
   const Icon = cfg.icon;
   return (
     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black ${cfg.color} ${cfg.bg} ring-1 ${cfg.ring}`}>
       {cfg.pulse && <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" /><span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" /></span>}
       <Icon className="w-3 h-3" />
-      {cfg.label}
+      {label}
     </span>
   );
 }
 
+const NEED_ICON: Record<string, any> = {
+  Food: Package, Medical: Heart, Shelter: Shield, Education: Brain, Other: Activity
+};
+
 export default function SmartAssign() {
+  const { t } = useLanguage();
   const [criticalNeeds, setCriticalNeeds] = useState<any[]>([]);
   const [stats, setStats] = useState({ pending: 0, assigned: 0, resolved: 0, volunteers: 0 });
   const [loading, setLoading] = useState(true);
@@ -89,7 +93,7 @@ export default function SmartAssign() {
       });
       setResolvedIds(newResolved);
 
-      toast.success(`✅ AI assigned ${actions.length} volunteer${actions.length !== 1 ? 's' : ''} to critical needs`);
+      toast.success(`✅ ${t('smart.complete')}`);
       await fetchData();
     } catch (err: any) {
       const msg = err.response?.data?.msg || 'AI matchmaking failed';
@@ -100,10 +104,10 @@ export default function SmartAssign() {
   };
 
   const statCards = [
-    { label: 'Pending Needs',     value: stats.pending,    icon: Clock,        color: 'orange', desc: 'Awaiting volunteer' },
-    { label: 'Active Assignments',value: stats.assigned,   icon: Target,       color: 'blue',   desc: 'In progress' },
-    { label: 'Resolved',          value: stats.resolved,   icon: CheckCircle,  color: 'teal',   desc: 'Successfully closed' },
-    { label: 'Volunteers Ready',  value: stats.volunteers, icon: Users,        color: 'purple', desc: 'In the network' },
+    { label: t('dashboard.stats.pending'),     value: stats.pending,    icon: Clock,        color: 'orange', desc: t('needs.status.pending') },
+    { label: t('layout.myTasks'), value: stats.assigned,   icon: Target,       color: 'blue',   desc: t('needs.status.assigned') },
+    { label: t('dashboard.stats.resolved'),          value: stats.resolved,   icon: CheckCircle,  color: 'teal',   desc: t('needs.status.completed') },
+    { label: t('dashboard.stats.volunteers'),  value: stats.volunteers, icon: Users,        color: 'purple', desc: t('nav.volunteers') },
   ];
 
   if (loading) {
@@ -127,9 +131,9 @@ export default function SmartAssign() {
               <div className="w-10 h-10 rounded-xl bg-[#1E3A8A] flex items-center justify-center shadow-lg shadow-blue-900/30">
                 <Zap className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Smart Assign</h1>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('smart.title')}</h1>
             </div>
-            <p className="text-gray-500 font-medium ml-[52px]">AI-powered mission control — from scattered data to immediate action</p>
+            <p className="text-gray-500 font-medium ml-[52px]">{t('smart.subtitle')}</p>
           </div>
 
           <motion.button
@@ -142,9 +146,9 @@ export default function SmartAssign() {
             {/* animated shimmer */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             {assigning ? (
-              <><Loader2 className="w-6 h-6 animate-spin" /> Running AI Matchmaker...</>
+              <><Loader2 className="w-6 h-6 animate-spin" /> {t('smart.running')}</>
             ) : (
-              <><Brain className="w-6 h-6" /> Run AI Matchmaker <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" /></>
+              <><Brain className="w-6 h-6" /> {t('smart.run')} <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" /></>
             )}
           </motion.button>
         </motion.div>
@@ -175,7 +179,7 @@ export default function SmartAssign() {
                 <CheckCircle className="w-7 h-7" />
               </div>
               <div>
-                <p className="font-black text-lg">AI Matchmaking Complete!</p>
+                <p className="font-black text-lg">{t('smart.complete')}</p>
                 <p className="text-teal-100 text-sm font-medium">{lastPlan.geminiSummary}</p>
               </div>
               <button onClick={() => setLastPlan(null)} className="ml-auto text-white/70 hover:text-white text-2xl font-light leading-none">&times;</button>
@@ -191,10 +195,10 @@ export default function SmartAssign() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
-                Priority Community Needs
+                {t('smart.priority')}
               </h2>
               <button onClick={fetchData} className="text-sm text-[#1E3A8A] font-semibold hover:underline flex items-center gap-1">
-                <Activity className="w-4 h-4" /> Refresh
+                <Activity className="w-4 h-4" /> {t('needs.filter.all')}
               </button>
             </div>
 
@@ -203,7 +207,7 @@ export default function SmartAssign() {
                 {criticalNeeds.map((need, idx) => {
                   const isResolved = resolvedIds.has(need._id?.toString());
                   const NeedIcon = NEED_ICON[need.needType] ?? Activity;
-                  const cfg = URGENCY_CONFIG[need.urgency?.toLowerCase()] ?? URGENCY_CONFIG.low;
+                  const cfg = URGENCY_CONFIG_STYLES[need.urgency?.toLowerCase()] ?? URGENCY_CONFIG_STYLES.low;
                   const isSelected = selectedNeed === need._id?.toString();
 
                   return (
@@ -242,7 +246,7 @@ export default function SmartAssign() {
                             <UrgencyBadge urgency={need.urgency} />
                             {isResolved && (
                               <span className="text-xs font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full ring-1 ring-teal-200">
-                                ✓ Assigned
+                                ✓ {t('needs.status.assigned')}
                               </span>
                             )}
                           </div>
@@ -272,10 +276,10 @@ export default function SmartAssign() {
                             className="overflow-hidden border-t border-gray-100"
                           >
                             <div className="px-4 py-3 bg-blue-50/50">
-                              <p className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Need Details</p>
+                              <p className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">{t('common.details')}</p>
                               <div className="grid grid-cols-2 gap-2 text-xs">
-                                {need.notes && <div><span className="text-gray-400">Notes:</span> <span className="text-gray-700 font-medium">{need.notes}</span></div>}
-                                {need.area && <div><span className="text-gray-400">Area:</span> <span className="text-gray-700 font-medium">{need.area}</span></div>}
+                                {need.notes && <div><span className="text-gray-400">{t('needs.form.notes')}:</span> <span className="text-gray-700 font-medium">{need.notes}</span></div>}
+                                {need.area && <div><span className="text-gray-400">{t('map.filter.area')}:</span> <span className="text-gray-700 font-medium">{need.area}</span></div>}
                                 <div><span className="text-gray-400">Status:</span> <span className="text-gray-700 font-medium capitalize">{need.status}</span></div>
                                 {need.householdId && <div><span className="text-gray-400">Household ID:</span> <span className="text-gray-700 font-medium">{need.householdId}</span></div>}
                               </div>
@@ -307,14 +311,14 @@ export default function SmartAssign() {
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
                   <Brain className="w-6 h-6" />
-                  <h3 className="font-black text-lg">How AI Assigns</h3>
+                  <h3 className="font-black text-lg">{t('smart.how.title')}</h3>
                 </div>
                 <div className="space-y-4">
                   {[
-                    { step: '01', title: 'Reads All Needs', desc: 'Pulls pending community needs ranked by urgency and area' },
-                    { step: '02', title: 'Profiles Volunteers', desc: 'Analyses skills, location, rating & active load' },
-                    { step: '03', title: 'Semantic Matching', desc: 'Gemini AI scores every possible volunteer-need pair' },
-                    { step: '04', title: 'Creates Actions', desc: 'Generates assignments with a reason and match score' },
+                    { step: '01', title: t('smart.how.step1.title'), desc: t('smart.how.step1.desc') },
+                    { step: '02', title: t('smart.how.step2.title'), desc: t('smart.how.step2.desc') },
+                    { step: '03', title: t('smart.how.step3.title'), desc: t('smart.how.step3.desc') },
+                    { step: '04', title: t('smart.how.step4.title'), desc: t('smart.how.step4.desc') },
                   ].map(s => (
                     <div key={s.step} className="flex gap-3">
                       <span className="text-blue-300 font-black text-xs mt-0.5 flex-shrink-0">{s.step}</span>
@@ -334,7 +338,7 @@ export default function SmartAssign() {
               className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-teal-500" />
-                Impact Snapshot
+                {t('smart.impact.title')}
               </h3>
               <div className="space-y-3">
                 {[
@@ -362,13 +366,13 @@ export default function SmartAssign() {
             {/* Quick Actions */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
               className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h3 className="font-black text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="font-black text-gray-900 mb-4">{t('smart.quick.title')}</h3>
               <div className="space-y-2">
                 {[
-                  { label: 'View All Pending Needs',  href: '/admin/needs',      color: 'bg-blue-50   text-[#1E3A8A]', icon: Activity },
-                  { label: 'Live Community Map',      href: '/admin/map',        color: 'bg-teal-50   text-teal-700',  icon: MapPin },
-                  { label: 'Impact Reports + CSV',    href: '/admin/reports',    color: 'bg-purple-50 text-purple-700', icon: TrendingUp },
-                  { label: 'Upload Paper Survey',     href: '/admin/surveys',    color: 'bg-orange-50 text-orange-700', icon: Brain },
+                  { label: t('nav.needs'),  href: '/admin/needs',      color: 'bg-blue-50   text-[#1E3A8A]', icon: Activity },
+                  { label: t('nav.map'),      href: '/admin/map',        color: 'bg-teal-50   text-teal-700',  icon: MapPin },
+                  { label: t('nav.reports'),    href: '/admin/reports',    color: 'bg-purple-50 text-purple-700', icon: TrendingUp },
+                  { label: t('nav.surveys'),     href: '/admin/surveys',    color: 'bg-orange-50 text-orange-700', icon: Brain },
                 ].map(a => (
                   <a key={a.label} href={a.href}
                     className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold ${a.color} hover:opacity-80 transition-opacity`}>

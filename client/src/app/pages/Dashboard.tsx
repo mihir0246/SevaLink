@@ -4,6 +4,7 @@ import { BarChart, Bar, PieChart, Pie, LineChart, Line, Cell, XAxis, YAxis, Cart
 import { TrendingUp, AlertCircle, Users, CheckCircle } from 'lucide-react';
 import { actionsAPI, recipientsAPI, reportsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const CATEGORY_COLORS: Record<string, string> = {
   Food: '#F97316', Medical: '#14B8A6', Shelter: '#1E3A8A', Education: '#8B5CF6', Other: '#6B7280'
@@ -52,6 +53,7 @@ const ActivityItem = ({ activity }: any) => {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState({ totalActions: 0, created: 0, assigned: 0, completed: 0, urgent: 0, activeVolunteers: 0, needsByCategory: [] as any[] });
   const [recipientStats, setRecipientStats] = useState({ total: 0, pending: 0 });
   const [recentActions, setRecentActions] = useState<any[]>([]);
@@ -89,23 +91,23 @@ export default function Dashboard() {
     <div className="min-h-screen pb-20 md:pb-8">
       <div className="p-6 md:p-8">
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <h1 className="text-3xl text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Track impact and manage community needs</p>
+          <h1 className="text-3xl text-gray-900 mb-2">{t('dashboard.title')}</h1>
+          <p className="text-gray-600">{t('dashboard.subtitle')}</p>
         </motion.div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard title="Total Needs" value={recipientStats.total} change="+from last month" trend="up" icon={AlertCircle} />
-          <StatCard title="Urgent Tasks" value={stats.urgent} change="Requires attention" trend="down" icon={AlertCircle} />
-          <StatCard title="Active Volunteers" value={stats.activeVolunteers} change="Available now" trend="up" icon={Users} />
-          <StatCard title="Completed Tasks" value={stats.completed} change="Actions fulfilled" trend="up" icon={CheckCircle} />
+          <StatCard title={t('dashboard.stats.totalNeeds')} value={recipientStats.total} change="+from last month" trend="up" icon={AlertCircle} />
+          <StatCard title={t('dashboard.stats.urgentTasks')} value={stats.urgent} change="Requires attention" trend="down" icon={AlertCircle} />
+          <StatCard title={t('dashboard.stats.activeVolunteers')} value={stats.activeVolunteers} change="Available now" trend="up" icon={Users} />
+          <StatCard title={t('dashboard.stats.completedTasks')} value={stats.completed} change="Actions fulfilled" trend="up" icon={CheckCircle} />
         </div>
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
             className="bg-white rounded-2xl p-6 border border-gray-200">
-            <h3 className="text-lg text-gray-900 mb-6">Needs by Area</h3>
+            <h3 className="text-lg text-gray-900 mb-6">{t('dashboard.charts.needsArea')}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={needsByArea.length ? needsByArea : [{ area: 'No data', count: 0 }]}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -119,7 +121,7 @@ export default function Dashboard() {
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
             className="bg-white rounded-2xl p-6 border border-gray-200">
-            <h3 className="text-lg text-gray-900 mb-6">Needs by Category</h3>
+            <h3 className="text-lg text-gray-900 mb-6">{t('dashboard.charts.needsCategory')}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie data={categoryData} cx="50%" cy="50%" labelLine={false} label={(e) => e.name}
@@ -135,7 +137,7 @@ export default function Dashboard() {
         {/* Trends — live from DB via Reports API */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="bg-white rounded-2xl p-6 border border-gray-200 mb-8">
-          <h3 className="text-lg text-gray-900 mb-6">Trends Over Time</h3>
+          <h3 className="text-lg text-gray-900 mb-6">{t('dashboard.charts.trends')}</h3>
           {isAdmin ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={liveTrends.length ? liveTrends : [{ month: 'No data', needs: 0, fulfilled: 0 }]}>
@@ -156,11 +158,11 @@ export default function Dashboard() {
         {/* Recent Activity */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
           className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-lg text-gray-900 mb-6">Recent Activity</h3>
+          <h3 className="text-lg text-gray-900 mb-6">{t('dashboard.activity.recent')}</h3>
           <div className="space-y-2">
             {recentActions.length > 0
               ? recentActions.map(a => <ActivityItem key={a._id} activity={a} />)
-              : <p className="text-sm text-gray-500 text-center py-8">No recent activity. Run AI matchmaking to create assignments.</p>
+              : <p className="text-sm text-gray-500 text-center py-8">{t('dashboard.activity.empty')}</p>
             }
           </div>
         </motion.div>

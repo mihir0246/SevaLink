@@ -4,10 +4,12 @@ import { motion } from 'motion/react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import { authAPI, saveAuth } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Login() {
   const navigate = useNavigate();
   const { setUser } = useAuth();
+  const { t } = useLanguage();
   const [role, setRole] = useState<'admin' | 'volunteer'>('admin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +38,7 @@ export default function Login() {
       {/* Top Navigation */}
       <nav className="bg-white border-b border-gray-200 px-6 py-4">
         <Link to="/" className="text-xl tracking-tight text-[#1E3A8A] hover:opacity-80 transition-opacity">
-          ← SevaLink
+          ← {t('nav.back')}
         </Link>
       </nav>
 
@@ -94,13 +96,13 @@ export default function Login() {
           className="w-full max-w-md"
         >
           <div className="mb-8">
-            <h2 className="text-3xl text-gray-900 mb-2">Welcome back</h2>
-            <p className="text-gray-600">Sign in to continue making an impact</p>
+            <h2 className="text-3xl text-gray-900 mb-2">{t('auth.welcome')}</h2>
+            <p className="text-gray-600">{t('auth.loginSubtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm text-gray-700 mb-2">I am a</label>
+              <label className="block text-sm text-gray-700 mb-2">{t('auth.iam')}</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -111,7 +113,7 @@ export default function Login() {
                       : 'border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Admin
+                  {t('auth.admin')}
                 </button>
                 <button
                   type="button"
@@ -122,13 +124,13 @@ export default function Login() {
                       : 'border-gray-200 text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  Volunteer
+                  {t('auth.volunteer')}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Email</label>
+              <label className="block text-sm text-gray-700 mb-2">{t('auth.email')}</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -137,13 +139,13 @@ export default function Login() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#1E3A8A] transition-colors"
-                  placeholder="you@example.com"
+                  placeholder={t('auth.email')}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm text-gray-700 mb-2">Password</label>
+              <label className="block text-sm text-gray-700 mb-2">{t('auth.password')}</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -172,7 +174,7 @@ export default function Login() {
                   : 'bg-[#14B8A6] hover:bg-[#14B8A6]/90'
               } disabled:opacity-60`}
             >
-              {loading ? 'Signing in...' : `Sign In as ${role === 'admin' ? 'Admin' : 'Volunteer'}`}
+              {loading ? t('auth.signingIn') : `${t('auth.signInAs')} ${role === 'admin' ? t('auth.admin') : t('auth.volunteer')}`}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </motion.button>
 
@@ -181,7 +183,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-[#F9FAFB] text-gray-500">Or continue with</span>
+                <span className="px-4 bg-[#F9FAFB] text-gray-500">{t('auth.orContinue')}</span>
               </div>
             </div>
 
@@ -195,14 +197,14 @@ export default function Login() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              Sign in with Google
+              {t('auth.googleSignIn')}
             </a>
           </form>
 
           <p className="mt-8 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link to="/signup" className="text-[#1E3A8A] hover:underline">
-              Sign up
+              {t('auth.signup')}
             </Link>
           </p>
         </motion.div>

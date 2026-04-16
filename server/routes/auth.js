@@ -20,16 +20,16 @@ router.post('/register', async (req, res) => {
     const hashed = await bcrypt.hash(password, salt);
 
     const username = email.split('@')[0] + '_' + Date.now();
-    user = new User({ firstName, lastName, email, password: hashed, role: role || 'volunteer', username });
+    
+    // Force role to always be 'volunteer' for public registrations
+    user = new User({ firstName, lastName, email, password: hashed, role: 'volunteer', username });
     await user.save();
 
-    if ((role || 'volunteer') === 'volunteer') {
-      const volunteer = new Volunteer({
-        userId: user._id, firstName, lastName, email, username,
-        skills: skills || [], city: city || '', active: true,
-      });
-      await volunteer.save();
-    }
+    const volunteer = new Volunteer({
+      userId: user._id, firstName, lastName, email, username,
+      skills: skills || [], city: city || '', active: true,
+    });
+    await volunteer.save();
 
     const payload = { id: user._id, email: user.email, role: user.role, firstName: user.firstName };
     const token = jwt.sign(payload, config.jwtSecret, { expiresIn: config.jwtExpiry });

@@ -9,19 +9,22 @@ import { reportsAPI } from '../services/api';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 const COLORS = ['#1E3A8A', '#14B8A6', '#F97316', '#8B5CF6', '#6B7280', '#EC4899'];
 
-const RANGES = [
-  { id: 'all', label: 'All Time' },
-  { id: '1day', label: 'Last 24 Hours' },
-  { id: '2days', label: 'Last 48 Hours' },
-  { id: 'week', label: 'Last Week' },
-  { id: 'month', label: 'Last Month' },
-  { id: 'year', label: 'Last Year' },
+const getRanges = (t: any) => [
+  { id: 'all', label: t('reports.range.all') },
+  { id: '1day', label: t('reports.range.24h') },
+  { id: '2days', label: t('reports.range.48h') },
+  { id: 'week', label: t('reports.range.week') },
+  { id: 'month', label: t('reports.range.month') },
+  { id: 'year', label: t('reports.range.year') },
 ];
 
 export default function Reports() {
+  const { t } = useLanguage();
+  const ranges = getRanges(t);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -165,8 +168,8 @@ export default function Reports() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">Impact Reports</h1>
-            <p className="text-gray-600 font-medium">Measuring community aid and volunteer efficiency</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">{t('reports.title')}</h1>
+            <p className="text-gray-600 font-medium">{t('reports.subtitle')}</p>
           </motion.div>
           
           <div className="flex items-center gap-3">
@@ -176,7 +179,7 @@ export default function Reports() {
                 onChange={(e) => setTimeRange(e.target.value)}
                 className="appearance-none pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 transition-all cursor-pointer shadow-sm"
               >
-                {RANGES.map(r => (
+                {ranges.map(r => (
                   <option key={r.id} value={r.id}>{r.label}</option>
                 ))}
               </select>
@@ -189,7 +192,7 @@ export default function Reports() {
               className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm active:scale-95"
             >
               <FileDown className="w-4 h-4 text-emerald-600" />
-              Export CSV
+              {t('reports.export')}
             </button>
           </div>
         </div>
@@ -202,10 +205,10 @@ export default function Reports() {
             const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
             return [
-              { label: 'Total Volunteers', value: data?.volunteerSummary?.total || 0, sub: 'Registered users', color: 'blue', icon: Users },
-              { label: 'Active Field Units', value: data?.volunteerSummary?.active || 0, sub: 'Live participation', color: 'teal', icon: Activity },
-              { label: 'Needs Resolved', value: resolved, sub: 'Success cases', color: 'orange', icon: CheckCircle },
-              { label: 'Resolution Rate', value: `${rate}%`, sub: 'Avg vs total', color: 'purple', icon: TrendingUp },
+              { label: t('reports.stats.vols'), value: data?.volunteerSummary?.total || 0, sub: 'Registered users', color: 'blue', icon: Users },
+              { label: t('reports.stats.active'), value: data?.volunteerSummary?.active || 0, sub: 'Live participation', color: 'teal', icon: Activity },
+              { label: t('reports.stats.resolved'), value: resolved, sub: 'Success cases', color: 'orange', icon: CheckCircle },
+              { label: t('reports.stats.rate'), value: `${rate}%`, sub: 'Avg vs total', color: 'purple', icon: TrendingUp },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -241,7 +244,7 @@ export default function Reports() {
           >
             <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-[#1E3A8A]" />
-              Fulfillment Trend Analysis
+              {t('reports.charts.trend')}
             </h3>
             <div className="h-[300px]">
               {data?.trends ? (
@@ -276,7 +279,7 @@ export default function Reports() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
           >
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Priority Distribution</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-6">{t('reports.charts.priority')}</h3>
             <div className="h-[300px]">
               {data?.needsByUrgency ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -314,7 +317,7 @@ export default function Reports() {
             animate={{ opacity: 1, y: 0 }}
             className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"
           >
-            <h3 className="text-lg font-bold text-gray-900 mb-6 underline decoration-[#1E3A8A]/10 decoration-4 underline-offset-8">Geographical Impact Analysis</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-6 underline decoration-[#1E3A8A]/10 decoration-4 underline-offset-8">{t('reports.charts.geo')}</h3>
             <div className="h-[300px]">
               {data?.areaImpact ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -341,9 +344,9 @@ export default function Reports() {
               <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-md">
                 <Download className="w-7 h-7" />
               </div>
-              <h2 className="text-2xl font-black mb-3 leading-tight">Generate AI Intelligence</h2>
+              <h2 className="text-2xl font-black mb-3 leading-tight">{t('reports.ai.title')}</h2>
               <p className="text-blue-100 text-sm mb-8 leading-relaxed font-medium">
-                Draft a semantic performance review using Gemini 1.5 Flash. Includes bottleneck analysis and regional demand forecasting.
+                {t('reports.ai.desc')}
               </p>
               <button 
                 onClick={handleGenerateAIPDF}
@@ -355,7 +358,7 @@ export default function Reports() {
                 ) : (
                   <Activity className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                 )}
-                {pdfLoading ? 'Analyzing...' : 'Generate AI PDF'}
+                {pdfLoading ? t('reports.ai.loading') : t('reports.ai.btn')}
               </button>
             </div>
             {/* Abstract Background Design */}

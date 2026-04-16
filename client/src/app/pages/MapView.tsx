@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, Filter, X, Navigation, Loader2 } from 'lucide-react';
+import { MapPin, Filter, X, Navigation, Loader2, Globe, Map as MapIcon, Search } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { recipientsAPI } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function MapView() {
+  const { t } = useLanguage();
   const [needs, setNeeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedNeed, setSelectedNeed] = useState<any>(null);
@@ -156,8 +158,8 @@ export default function MapView() {
           <h3 class="text-sm font-bold text-gray-900 mb-1">${need.title}</h3>
           <p class="text-xs text-gray-500 mb-3">${need.location}</p>
           <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-            <span class="text-[10px] font-bold text-gray-400">${need.volunteers} Volunteers</span>
-            <button class="px-3 py-1 bg-[#1E3A8A] text-white rounded-lg text-[10px] font-bold hover:bg-blue-900 transition-colors">Details</button>
+            <span class="text-[10px] font-bold text-gray-400">${need.volunteers} ${t('map.marker.volunteers')}</span>
+            <button class="px-3 py-1 bg-[#1E3A8A] text-white rounded-lg text-[10px] font-bold hover:bg-blue-900 transition-colors">${t('common.details')}</button>
           </div>
         </div>
       `, {
@@ -214,19 +216,31 @@ export default function MapView() {
       <div className={`${showFilters ? 'block' : 'hidden'} md:block w-full md:w-80 bg-white border-r border-gray-100 flex flex-col z-20 shadow-2xl relative`}>
         <div className="p-6 border-b border-gray-100 bg-white z-30">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-[#1E3A8A] tracking-tight">Map Center</h2>
+            <h2 className="text-2xl font-bold text-[#1E3A8A] tracking-tight">{t('map.title')}</h2>
             <button onClick={() => setShowFilters(false)} className="md:hidden"><X className="w-5 h-5 text-gray-400" /></button>
+          </div>
+
+          <div className="relative group mb-6">
+            <div className="absolute inset-0 bg-blue-50/50 rounded-2xl -z-10 blur-sm group-focus-within:bg-blue-100 transition-all" />
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-[#1E3A8A] transition-colors" />
+              <input
+                type="text"
+                placeholder={t('needs.filter.search')}
+                className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl text-sm font-medium focus:outline-none focus:bg-white focus:border-[#1E3A8A]/20 transition-all"
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:border-blue-100">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Filter Area</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{t('map.filter.area')}</label>
               <select
                 value={filters.area}
                 onChange={(e) => setFilters({ ...filters, area: e.target.value })}
                 className="w-full bg-transparent border-none focus:ring-0 text-sm font-semibold text-gray-700 p-0 cursor-pointer"
               >
-                <option value="all">Global View</option>
+                <option value="all">{t('map.filter.global')}</option>
                 {Array.from(new Set(needs.map(n => n.city))).filter(Boolean).map(city => (
                   <option key={city} value={city}>{city}</option>
                 ))}
@@ -234,17 +248,23 @@ export default function MapView() {
             </div>
             
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Category</label>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{t('map.filter.category')}</label>
               <div className="flex flex-wrap gap-2">
-                {['all', 'Food', 'Medical', 'Shelter', 'Education'].map(c => (
+                {[
+                  { id: 'all', l: t('needs.filter.all') },
+                  { id: 'Food', l: t('cat.food') },
+                  { id: 'Medical', l: t('cat.medical') },
+                  { id: 'Shelter', l: t('cat.shelter') },
+                  { id: 'Education', l: t('cat.education') }
+                ].map(c => (
                   <button
-                    key={c}
-                    onClick={() => setFilters({ ...filters, type: c })}
+                    key={c.id}
+                    onClick={() => setFilters({ ...filters, type: c.id })}
                     className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all shadow-sm ${
-                      filters.type === c ? 'bg-[#1E3A8A] text-white' : 'bg-white text-gray-500 border border-gray-200'
+                      filters.type === c.id ? 'bg-[#1E3A8A] text-white' : 'bg-white text-gray-500 border border-gray-200'
                     }`}
                   >
-                    {c.toUpperCase()}
+                    {c.l.toUpperCase()}
                   </button>
                 ))}
               </div>
@@ -281,13 +301,13 @@ export default function MapView() {
 
         {/* Legend */}
         <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-5 border border-white z-[1000] hidden sm:block">
-          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Urgency Guide</h4>
+          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">{t('map.legend.title')}</h4>
           <div className="space-y-2.5">
             {[
-              { l: 'Critical', c: 'bg-red-600' },
-              { l: 'High', c: 'bg-orange-500' },
-              { l: 'Medium', c: 'bg-teal-500' },
-              { l: 'Low', c: 'bg-gray-400' }
+              { l: t('needs.stat.critical'), c: 'bg-red-600' },
+              { l: t('map.legend.high'), c: 'bg-orange-500' },
+              { l: t('map.legend.medium'), c: 'bg-teal-500' },
+              { l: t('map.legend.low'), c: 'bg-gray-400' }
             ].map(i => (
               <div key={i.l} className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${i.c} shadow-sm`} />

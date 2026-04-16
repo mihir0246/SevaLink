@@ -2,9 +2,17 @@ import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Database, BarChart3, Users, MapPin, TrendingUp, Heart, Globe } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
+
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'hi', name: 'हिंदी' },
+    { code: 'mr', name: 'मराठी' }
+  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -13,17 +21,30 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <span className="text-2xl tracking-tight text-[#1E3A8A]">SevaLink</span>
           <div className="flex items-center gap-3">
+            {/* Language Switcher */}
+            <div className="relative group">
+              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center">
+                <Globe className="w-5 h-5 text-[#1E3A8A]" />
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-32 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => setLanguage(lang.code as any)}
+                    className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
+                      language === lang.code ? 'bg-[#1E3A8A]/10 text-[#1E3A8A]' : 'text-gray-700'
+                    }`}
+                  >
+                    {lang.name}
+                  </button>
+                ))}
+              </div>
+            </div>
             <button
               onClick={() => navigate('/login')}
               className="px-4 py-2 text-sm text-[#1E3A8A] hover:bg-gray-50 rounded-lg transition-colors"
             >
-              Sign In
-            </button>
-            <button
-              onClick={() => navigate('/signup')}
-              className="px-4 py-2 text-sm bg-[#1E3A8A] text-white hover:bg-[#1E3A8A]/90 rounded-lg transition-colors"
-            >
-              Get Started
+              {t('nav.signIn')}
             </button>
           </div>
         </div>
@@ -39,10 +60,10 @@ export default function Landing() {
               transition={{ duration: 0.6 }}
             >
               <h1 className="text-5xl md:text-6xl text-gray-900 mb-6 leading-tight">
-                Connecting Community Needs with the Right Help
+                {t('landing.hero.title')}
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Empowering NGOs and volunteers to create meaningful impact through smart data collection and coordination
+                {t('landing.hero.subtitle')}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <motion.button
@@ -51,16 +72,8 @@ export default function Landing() {
                   onClick={() => navigate('/signup')}
                   className="px-8 py-4 bg-[#1E3A8A] text-white rounded-xl hover:bg-[#1E3A8A]/90 transition-all flex items-center justify-center gap-2 text-lg group"
                 >
-                  Get Started
+                  {t('landing.cta.joinVolunteer')}
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => navigate('/signup?role=volunteer')}
-                  className="px-8 py-4 bg-white border-2 border-[#1E3A8A] text-[#1E3A8A] rounded-xl hover:bg-gray-50 transition-all text-lg"
-                >
-                  Join as Volunteer
                 </motion.button>
               </div>
             </motion.div>
@@ -85,7 +98,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <p className="text-2xl text-gray-900">2,847</p>
-                    <p className="text-sm text-gray-600">Active Volunteers</p>
+                    <p className="text-sm text-gray-600">{t('impact.vols')}</p>
                   </div>
                 </div>
               </div>
@@ -103,39 +116,39 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl text-gray-900 mb-4">Powerful Features for Social Impact</h2>
-            <p className="text-xl text-gray-600">Everything you need to manage and coordinate community initiatives</p>
+            <h2 className="text-4xl text-gray-900 mb-4">{t('landing.features.title')}</h2>
+            <p className="text-xl text-gray-600">{t('landing.features.subtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: Database,
-                title: 'Smart Data Collection',
-                description: 'OCR-powered survey extraction from paper forms and digital uploads',
+                titleKey: 'feature.data.title',
+                descKey: 'feature.data.desc',
                 color: 'bg-[#1E3A8A]'
               },
               {
                 icon: BarChart3,
-                title: 'Real-time Insights',
-                description: 'Visualize community needs with interactive charts and analytics',
+                titleKey: 'feature.charts.title',
+                descKey: 'feature.charts.desc',
                 color: 'bg-[#14B8A6]'
               },
               {
                 icon: Users,
-                title: 'Volunteer Coordination',
-                description: 'Match skilled volunteers with tasks they can make the biggest impact on',
+                titleKey: 'feature.vols.title',
+                descKey: 'feature.vols.desc',
                 color: 'bg-[#F97316]'
               },
               {
                 icon: MapPin,
-                title: 'Geographic Mapping',
-                description: 'Track needs and resources across your community in real-time',
+                titleKey: 'feature.map.title',
+                descKey: 'feature.map.desc',
                 color: 'bg-[#8B5CF6]'
               }
             ].map((feature, index) => (
               <motion.div
-                key={feature.title}
+                key={feature.titleKey}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -146,8 +159,8 @@ export default function Landing() {
                 <div className={`w-12 h-12 rounded-xl ${feature.color} flex items-center justify-center mb-4`}>
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-xl text-gray-900 mb-2">{t(feature.titleKey)}</h3>
+                <p className="text-gray-600">{t(feature.descKey)}</p>
               </motion.div>
             ))}
           </div>
@@ -163,28 +176,28 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl text-gray-900 mb-4">How It Works</h2>
-            <p className="text-xl text-gray-600">Three simple steps to make a difference</p>
+            <h2 className="text-4xl text-gray-900 mb-4">{t('landing.how.title')}</h2>
+            <p className="text-xl text-gray-600">{t('landing.how.subtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-12">
             {[
               {
                 step: '01',
-                title: 'Collect Data',
-                description: 'Upload survey forms or use our OCR system to extract community needs from paper forms',
+                titleKey: 'how.step1.title',
+                descKey: 'how.step1.desc',
                 image: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=400&q=80'
               },
               {
                 step: '02',
-                title: 'Analyze Needs',
-                description: 'Our platform automatically categorizes and prioritizes needs based on urgency and location',
+                titleKey: 'how.step2.title',
+                descKey: 'how.step2.desc',
                 image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&q=80'
               },
               {
                 step: '03',
-                title: 'Volunteers Take Action',
-                description: 'Skilled volunteers accept tasks and create real impact in their communities',
+                titleKey: 'how.step3.title',
+                descKey: 'how.step3.desc',
                 image: 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=400&q=80'
               }
             ].map((item, index) => (
@@ -202,12 +215,12 @@ export default function Landing() {
                 <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
                   <ImageWithFallback
                     src={item.image}
-                    alt={item.title}
+                    alt={t(item.titleKey)}
                     className="w-full h-48 object-cover"
                   />
                   <div className="p-6">
-                    <h3 className="text-xl text-gray-900 mb-2">{item.title}</h3>
-                    <p className="text-gray-600">{item.description}</p>
+                    <h3 className="text-xl text-gray-900 mb-2">{t(item.titleKey)}</h3>
+                    <p className="text-gray-600">{t(item.descKey)}</p>
                   </div>
                 </div>
               </motion.div>
@@ -225,19 +238,19 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl text-white mb-4">Our Impact</h2>
-            <p className="text-xl text-white/90">Making a difference, one community at a time</p>
+            <h2 className="text-4xl text-white mb-4">{t('landing.impact.title')}</h2>
+            <p className="text-xl text-white/90">{t('landing.impact.subtitle')}</p>
           </motion.div>
 
           <div className="grid md:grid-cols-4 gap-8">
             {[
-              { icon: Users, value: '12,847', label: 'People Helped' },
-              { icon: TrendingUp, value: '3,249', label: 'Tasks Completed' },
-              { icon: Heart, value: '847', label: 'Active Volunteers' },
-              { icon: Globe, value: '23', label: 'Communities Served' }
+              { icon: Users, value: '12,847', labelKey: 'impact.people' },
+              { icon: TrendingUp, value: '3,249', labelKey: 'impact.tasks' },
+              { icon: Heart, value: '847', labelKey: 'impact.vols' },
+              { icon: Globe, value: '23', labelKey: 'impact.communities' }
             ].map((stat, index) => (
               <motion.div
-                key={stat.label}
+                key={stat.labelKey}
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
@@ -248,7 +261,7 @@ export default function Landing() {
                   <stat.icon className="w-8 h-8" />
                 </div>
                 <p className="text-4xl mb-2">{stat.value}</p>
-                <p className="text-white/90">{stat.label}</p>
+                <p className="text-white/90">{t(stat.labelKey)}</p>
               </motion.div>
             ))}
           </div>
@@ -281,11 +294,6 @@ export default function Landing() {
                 </li>
                 <li>
                   <button onClick={() => navigate('/signup')} className="hover:text-white transition-colors text-left">
-                    Register as NGO
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => navigate('/signup?role=volunteer')} className="hover:text-white transition-colors text-left">
                     Join as Volunteer
                   </button>
                 </li>

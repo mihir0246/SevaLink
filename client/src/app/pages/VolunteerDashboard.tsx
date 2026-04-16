@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Star, Award, Clock, TrendingUp, Calendar } from 'lucide-react';
 import { volunteersAPI, actionsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const StatCard = ({ label, value, icon: Icon }: any) => (
   <motion.div whileHover={{ y: -4 }} className="bg-white rounded-xl p-4 border border-gray-200">
@@ -43,6 +44,7 @@ const AVAILABILITY = [
 
 export default function VolunteerDashboard() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<any>(null);
   const [myActions, setMyActions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ export default function VolunteerDashboard() {
     }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-gray-500">Loading profile...</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-gray-500">{t('common.loading')}</div>;
 
   const name = profile ? `${profile.firstName || ''} ${profile.lastName || ''}`.trim() : 'Volunteer';
   const email = profile?.email || '';
@@ -131,10 +133,10 @@ export default function VolunteerDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <StatCard label="Total Tasks" value={totalTasks} icon={Award} />
-          <StatCard label="Hours Contributed" value={hours} icon={Clock} />
-          <StatCard label="Active Tasks" value={myActions.length} icon={TrendingUp} />
-          <StatCard label="Available Hours" value={profile?.availableHours ?? 10} icon={Calendar} />
+          <StatCard label={t('vol.stat.totalTasks')} value={totalTasks} icon={Award} />
+          <StatCard label={t('vol.stat.hours')} value={hours} icon={Clock} />
+          <StatCard label={t('vol.stat.active')} value={myActions.length} icon={TrendingUp} />
+          <StatCard label={t('vol.stat.available')} value={profile?.availableHours ?? 10} icon={Calendar} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -143,10 +145,10 @@ export default function VolunteerDashboard() {
             {/* Assigned Tasks from DB */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
               className="bg-white rounded-2xl p-6 border border-gray-200">
-              <h2 className="text-xl text-gray-900 mb-6">Assigned Tasks</h2>
+              <h2 className="text-xl text-gray-900 mb-6">{t('vol.tasks.assigned')}</h2>
               <div className="space-y-4">
                 {myActions.length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-8">No tasks assigned yet</p>
+                  <p className="text-sm text-gray-500 text-center py-8">{t('vol.tasks.empty')}</p>
                 )}
                 {myActions.map(task => (
                   <motion.div key={task._id} whileHover={{ x: 4 }}
@@ -168,7 +170,7 @@ export default function VolunteerDashboard() {
             {/* Availability */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
               className="bg-white rounded-2xl p-6 border border-gray-200">
-              <h2 className="text-xl text-gray-900 mb-6">Availability</h2>
+              <h2 className="text-xl text-gray-900 mb-6">{t('vol.availability.title')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {AVAILABILITY.map(day => (
                   <div key={day.day} className="p-4 bg-gray-50 rounded-xl">
@@ -188,7 +190,7 @@ export default function VolunteerDashboard() {
           <div>
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
               className="bg-white rounded-2xl p-6 border border-gray-200 sticky top-8">
-              <h2 className="text-xl text-gray-900 mb-6">Achievements</h2>
+              <h2 className="text-xl text-gray-900 mb-6">{t('vol.achievements.title')}</h2>
               <div className="grid grid-cols-2 gap-4">
                 {getDynamicBadges(profile).map(badge => (
                   <motion.div key={badge.name} whileHover={{ scale: 1.05 }}
@@ -200,7 +202,7 @@ export default function VolunteerDashboard() {
                 ))}
               </div>
               <div className="mt-6 p-4 bg-gradient-to-r from-[#F97316]/10 to-[#14B8A6]/10 rounded-xl">
-                <h3 className="text-sm text-gray-900 mb-2">Next Milestone</h3>
+                <h3 className="text-sm text-gray-900 mb-2">{t('vol.nextMilestone')}</h3>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-gray-600">50 Tasks</span>
                   <span className="text-xs text-gray-600">{totalTasks}/50</span>

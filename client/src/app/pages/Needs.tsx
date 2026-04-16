@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, MapPin, User, Activity, Edit2, Trash2, ShieldCheck, Phone, X, ExternalLink, Globe, AlertTriangle, CheckCircle2, Clock, Tag } from 'lucide-react';
 import { recipientsAPI, actionsAPI } from '../services/api';
 import { toast } from 'sonner';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Needs() {
+  const { t } = useLanguage();
   const [needs, setNeeds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,11 +45,11 @@ export default function Needs() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed': return <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase">Verified</span>;
-      case 'pending-verification': return <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase animate-pulse">Pending Review</span>;
-      case 'assigned': return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase">Assigned</span>;
-      case 'in-progress': return <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase">In Progress</span>;
-      default: return <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-[10px] font-black uppercase">Pending Data</span>;
+      case 'completed': return <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-black uppercase">{t('needs.status.completed')}</span>;
+      case 'pending-verification': return <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase animate-pulse">{t('needs.status.pending')}</span>;
+      case 'assigned': return <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-black uppercase">{t('needs.status.assigned')}</span>;
+      case 'in-progress': return <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase">{t('needs.status.inprogress')}</span>;
+      default: return <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-[10px] font-black uppercase">{t('needs.status.data')}</span>;
     }
   };
 
@@ -55,35 +57,35 @@ export default function Needs() {
     if (e) e.stopPropagation();
     try {
       await recipientsAPI.delete(id);
-      toast.success('Recipient removed successfully');
+      toast.success(t('needs.toast.removeSuccess'));
       setShowDeleteConfirm(false);
       fetchNeeds();
       if (selectedNeed?._id === id) setSelectedNeed(null);
     } catch (err) {
-      toast.error('Failed to remove recipient');
+      toast.error(t('needs.toast.removeError'));
     }
   };
 
   const handleVerify = async (actionId: string) => {
     try {
       await actionsAPI.verify(actionId);
-      toast.success('Action verified and closed');
+      toast.success(t('needs.toast.verifySuccess'));
       fetchNeeds();
       setSelectedNeed(null);
     } catch (err) {
-      toast.error('Failed to verify action');
+      toast.error(t('needs.toast.verifyError'));
     }
   };
 
   const handleSaveEdit = async () => {
     try {
       await recipientsAPI.update(editForm._id, editForm);
-      toast.success('Recipient updated successfully');
+      toast.success(t('needs.toast.updateSuccess'));
       setIsEditing(false);
       fetchNeeds();
       setSelectedNeed(editForm);
     } catch (err) {
-      toast.error('Failed to update recipient');
+      toast.error(t('needs.toast.updateError'));
     }
   };
 
@@ -99,18 +101,18 @@ export default function Needs() {
             <div className="w-10 h-10 bg-[#1E3A8A] rounded-xl flex items-center justify-center text-white shadow-lg">
               <Globe className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Community Needs</h1>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">{t('needs.title')}</h1>
           </div>
-          <p className="text-gray-500 font-medium ml-[52px]">Central coordination for all community aid requests and volunteer efforts</p>
+          <p className="text-gray-500 font-medium ml-[52px]">{t('needs.subtitle')}</p>
         </motion.div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Total Needs', value: needs.length, icon: Activity, color: 'blue' },
-            { label: 'Unassigned', value: needs.filter(n => n.status === 'pending').length, icon: User, color: 'indigo' },
-            { label: 'Assigned', value: needs.filter(n => n.assignedTo).length, icon: ShieldCheck, color: 'teal' },
-            { label: 'Critical', value: needs.filter(n => n.urgency === 'critical').length, icon: AlertTriangle, color: 'red' },
+            { label: t('dashboard.stats.totalNeeds'), value: needs.length, icon: Activity, color: 'blue' },
+            { label: t('needs.stat.unassigned'), value: needs.filter(n => n.status === 'pending').length, icon: User, color: 'indigo' },
+            { label: t('needs.stat.assigned'), value: needs.filter(n => n.assignedTo).length, icon: ShieldCheck, color: 'teal' },
+            { label: t('needs.stat.critical'), value: needs.filter(n => n.urgency === 'critical').length, icon: AlertTriangle, color: 'red' },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all group overflow-hidden relative">
               <div className="flex items-center justify-between relative z-10">
@@ -136,7 +138,7 @@ export default function Needs() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, city, or ID..."
+                placeholder={t('needs.filter.search')}
                 className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 text-sm font-medium"
               />
             </div>
@@ -146,7 +148,7 @@ export default function Needs() {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 text-sm font-bold text-gray-700"
             >
-              <option value="all">All Needs</option>
+              <option value="all">{t('needs.filter.all')}</option>
               <option value="Food">Food</option>
               <option value="Medical">Medical</option>
               <option value="Shelter">Shelter</option>
@@ -158,7 +160,7 @@ export default function Needs() {
               onChange={(e) => setUrgencyFilter(e.target.value)}
               className="px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 text-sm font-bold text-gray-700"
             >
-              <option value="all">All Urgency</option>
+              <option value="all">{t('needs.filter.urgency')}</option>
               <option value="critical">Critical</option>
               <option value="high">High</option>
               <option value="medium">Medium</option>
@@ -179,12 +181,12 @@ export default function Needs() {
             <table className="w-full">
               <thead className="bg-[#1E3A8A]/5 border-b border-gray-100">
                 <tr>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Person / ID</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Type</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Urgency</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Status</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">Assigned To</th>
-                  <th className="px-6 py-4 text-right text-[10px] font-black text-gray-500 uppercase tracking-widest">Actions</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('needs.table.person')}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('needs.table.type')}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('needs.table.urgency')}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('needs.table.status')}</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('needs.table.assigned')}</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('needs.table.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 transition-all">
@@ -287,18 +289,18 @@ export default function Needs() {
               {isEditing ? (
                 <div className="p-8">
                   <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">Edit Requirement</h2>
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t('needs.modal.edit')}</h2>
                     <button onClick={() => setIsEditing(false)} className="p-2 hover:bg-gray-100 rounded-xl"><X className="w-6 h-6" /></button>
                   </div>
                   
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">First Name</label>
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">{t('needs.modal.firstName')}</label>
                         <input value={editForm.firstName || ''} onChange={e => setEditForm({...editForm, firstName: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 text-sm font-bold" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Last Name</label>
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">{t('needs.modal.lastName')}</label>
                         <input value={editForm.lastName || ''} onChange={e => setEditForm({...editForm, lastName: e.target.value})} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/10 text-sm font-bold" />
                       </div>
                     </div>
@@ -337,7 +339,7 @@ export default function Needs() {
                     </div>
                     <div className="space-y-1.5 pt-4">
                       <button onClick={handleSaveEdit} className="w-full py-4 bg-[#1E3A8A] text-white rounded-2xl font-black text-lg shadow-xl shadow-blue-900/20 active:scale-95 transition-all">
-                        Update Information
+                        {t('needs.modal.update')}
                       </button>
                     </div>
                   </div>

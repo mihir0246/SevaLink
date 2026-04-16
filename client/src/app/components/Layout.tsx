@@ -34,7 +34,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
 
   const handleLogout = () => {
     logout();
@@ -44,7 +44,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
   const navigation = userRole === 'admin' ? adminNavigation : volunteerNavigation;
   const { user, logout } = useAuth();
   const userName = user ? `${user.firstName || ''}${user.lastName ? ' ' + user.lastName : ''}`.trim() : (userRole === 'admin' ? 'Admin' : 'Volunteer');
-  const userRoleText = userRole === 'admin' ? 'NGO Admin' : 'Volunteer';
+  const userRoleText = userRole === 'admin' ? t('auth.role.admin') : t('auth.role.volunteer');
 
   const languages = [
     { code: 'en', name: 'English' },
@@ -84,7 +84,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
               const isActive = location.pathname === item.to;
               return (
                 <Link
-                  key={item.name}
+                  key={item.key || item.name}
                   to={item.to}
                   className={`flex items-center px-3 py-2.5 text-sm rounded-lg transition-all relative ${
                     isActive
@@ -95,7 +95,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
                   }`}
                 >
                   <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
+                  {item.key ? t(item.key) : item.name}
                   {item.highlight && !isActive && (
                     <span className="ml-auto text-[10px] font-black bg-[#1E3A8A] text-white px-1.5 py-0.5 rounded-full">AI</span>
                   )}
@@ -128,7 +128,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
               <button
                 onClick={handleLogout}
                 className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all group"
-                title="Sign Out"
+                title={t('nav.logout')}
               >
                 <LogOut className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </button>
@@ -191,7 +191,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
                 const isActive = location.pathname === item.to;
                 return (
                   <Link
-                    key={item.name}
+                    key={item.key || item.name}
                     to={item.to}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center px-3 py-2.5 text-sm rounded-lg transition-colors ${
@@ -201,7 +201,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
                     }`}
                   >
                     <item.icon className="w-5 h-5 mr-3" />
-                    {item.name}
+                    {item.key ? t(item.key) : item.name}
                   </Link>
                 );
               })}
@@ -210,7 +210,7 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
                 className="w-full flex items-center px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mt-4 border-t border-gray-100 pt-4"
               >
                 <LogOut className="w-5 h-5 mr-3" />
-                Sign Out
+                {t('nav.logout')}
               </button>
             </nav>
           </motion.div>
@@ -300,14 +300,14 @@ export default function Layout({ children, userRole = 'admin' }: LayoutProps) {
             const isActive = location.pathname === item.to;
             return (
               <Link
-                key={item.name}
+                key={item.key || item.name}
                 to={item.to}
                 className={`flex flex-col items-center px-3 py-2 text-xs ${
                   isActive ? 'text-[#1E3A8A]' : 'text-gray-500'
                 }`}
               >
                 <item.icon className="w-5 h-5 mb-1" />
-                <span>{item.name}</span>
+                <span>{item.key ? t(item.key) : item.name}</span>
               </Link>
             );
           })}
